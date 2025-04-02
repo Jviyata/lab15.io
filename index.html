@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treemap Visualization with Enhanced Data</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+
+    svg {
+      display: block;
+      margin: auto;
+    }
+
+    .node {
+      stroke: #fff;
+      stroke-width: 2px;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid black;
+      visibility: hidden;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+    }
+
+    .legend-box {
+      width: 15px;
+      height: 15px;
+      margin-right: 5px;
+    }
+
+    .node-text {
+      font-size: 12px;
+      font-weight: bold;
+      fill: #000;
+      text-anchor: middle;
+      alignment-baseline: middle;
+    }
+
+    .disgust-text {
+      fill: #000;
+      font-size: 12px;
+      font-weight: bold;
+      text-anchor: middle;
+      alignment-baseline: middle;
+    }
+
+    .node:hover {
+      opacity: 0.7;
+    }
+
+    .legend-text {
+      font-size: 14px;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Movie Genres - Emotion Distribution</h2>
+  <svg width="800" height="600"></svg>
+  <div class="tooltip"></div>
+  <div class="legend"></div>
+
+  <script>
+    const data = {
+      "name": "Movie Genres",
+      "children": [
+        {
+          "name": "Action",
+          "children": [
+            { "name": "anger", "value": 1091 },
+            { "name": "anticipation", "value": 1117 },
+            { "name": "disgust", "value": 394 },
+            { "name": "fear", "value": 726 },
+            { "name": "joy", "value": 721 },
+            { "name": "optimism", "value": 848 },
+            { "name": "sadness", "value": 1906 }
+          ]
+        },
+        {
+          "name": "Adventure",
+          "children": [
+            { "name": "anger", "value": 664 },
+            { "name": "anticipation", "value": 670 },
+            { "name": "disgust", "value": 184 },
+            { "name": "fear", "value": 491 },
+            { "name": "joy", "value": 495 },
+            { "name": "optimism", "value": 615 },
+            { "name": "sadness", "value": 1425 }
+          ]
+        }
+      ]
+    };
+
+    const width = 800, height = 600;
+    const svg = d3.select("svg");
+    const color = d3.scaleOrdinal()
+      .domain([
+        "Action", "Adventure", "anger", "anticipation", "disgust", "fear", "joy", "optimism", "sadness"
+      ])
+      .range([
+        "#D76C82", "#C7DB9C", "#D76C82", "#C7DB9C", "#D76C82", "#C7DB9C", "#D76C82", "#C7DB9C", "#D76C82"
+      ]);
+
+    const tooltip = d3.select(".tooltip");
+
+    const root = d3.hierarchy(data).sum(d => d.value);
+    d3.treemap().size([width, height]).padding(2)(root);
+
+    svg.selectAll("rect")
+      .data(root.leaves())
+      .enter().append("rect")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("width", d => d.x1 - d.x0)
+      .attr("height", d => d.y1 - d.y0)
+      .attr("fill", d => color(d.parent.data.name))
+      .attr("class", "node")
+      .on("mouseover", (event, d) => {
+        tooltip.style("visibility", "visible")
+          .text(`${d.data.name}: ${d.value}`);
+      })
+      .on("mousemove", (event) => {
+        tooltip.style("top", `${event.pageY - 10}px`)
+          .style("left", `${event.pageX + 10}px`);
+      })
+      .on("mouseout", () => {
+        tooltip.style("visibility", "hidden");
+      });
+
+    svg.selectAll("text")
+      .data(root.leaves())
+      .enter().append("text")
+      .attr("x", d => (d.x0 + d.x1) / 2)
+      .attr("y", d => (d.y0 + d.y1) / 2)
+      .text(d => d.data.name)
+      .attr("class", d => (d.data.name === "disgust" && d.parent.data.name === "Adventure") ? "disgust-text" : "node-text");
+
+    const genres = Array.from(new Set(root.leaves().map(d => d.parent.data.name)));
+    const legend = d3.select(".legend");
+
+    genres.forEach(genre => {
+      const legendItem = legend.append("div");
+      legendItem.append("div")
+        .attr("class", "legend-box")
+        .style("background", color(genre));
+      legendItem.append("span")
+        .attr("class", "legend-text")
+        .text(genre);
+    });
+  </script>
+</body>
+</html>
